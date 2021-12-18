@@ -1,52 +1,40 @@
 package com.ansj.vec;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import com.ansj.vec.domain.HiddenNeuron;
+import com.ansj.vec.domain.Neuron;
+import com.ansj.vec.domain.WordNeuron;
+import com.ansj.vec.util.Haffman;
+import com.ansj.vec.util.MapCount;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.ansj.vec.util.MapCount;
-import com.ansj.vec.domain.HiddenNeuron;
-import com.ansj.vec.domain.Neuron;
-import com.ansj.vec.domain.WordNeuron;
-import com.ansj.vec.util.Haffman;
-
 public class Learn {
 
+    public int EXP_TABLE_SIZE = 1000;
     private Map<String, Neuron> wordMap = new HashMap<>();
     /**
      * 训练多少个特征
      */
     private int layerSize = 200;
-
     /**
      * 上下文窗口大小
      */
     private int window = 5;
-
     private double sample = 1e-3;
     private double alpha = 0.025;
     private double startingAlpha = alpha;
-
-    public int EXP_TABLE_SIZE = 1000;
-
     private Boolean isCbow = false;
 
     private double[] expTable = new double[EXP_TABLE_SIZE];
 
     private int trainWordsCount = 0;
 
-    private int MAX_EXP = 6;
+    private final int MAX_EXP = 6;
 
     public Learn(Boolean isCbow, Integer layerSize, Integer window, Double alpha, Double sample) {
         createExpTable();
@@ -69,12 +57,10 @@ public class Learn {
 
     /**
      * trainModel
-     * 
-     * @throws IOException
      */
     private void trainModel(File file) throws IOException {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
-            String temp = null;
+            String temp;
             long nextRandom = 5;
             int wordCount = 0;
             int lastWordCount = 0;
@@ -92,9 +78,9 @@ public class Learn {
                 }
                 String[] strs = temp.split(" ");
                 wordCount += strs.length;
-                List<WordNeuron> sentence = new ArrayList<WordNeuron>();
-                for (int i = 0; i < strs.length; i++) {
-                    Neuron entry = wordMap.get(strs[i]);
+                List<WordNeuron> sentence = new ArrayList<>();
+                for (String str : strs) {
+                    Neuron entry = wordMap.get(str);
                     if (entry == null) {
                         continue;
                     }
@@ -130,14 +116,11 @@ public class Learn {
 
     /**
      * skip gram 模型训练
-     * 
-     * @param sentence
-     * @param neu1
      */
     private void skipGram(int index, List<WordNeuron> sentence, int b) {
         // TODO Auto-generated method stub
         WordNeuron word = sentence.get(index);
-        int a, c = 0;
+        int a, c;
         for (a = b; a < window * 2 + 1 - b; a++) {
             if (a == window) {
                 continue;
@@ -186,10 +169,7 @@ public class Learn {
 
     /**
      * 词袋模型
-     * 
-     * @param index
-     * @param sentence
-     * @param b
+     *
      */
     private void cbowGram(int index, List<WordNeuron> sentence, int b) {
         WordNeuron word = sentence.get(index);
@@ -259,9 +239,7 @@ public class Learn {
 
     /**
      * 统计词频
-     * 
-     * @param file
-     * @throws IOException
+     *
      */
     private void readVocab(File file) throws IOException {
         MapCount<String> mc = new MapCount<>();
@@ -283,10 +261,7 @@ public class Learn {
 
     /**
      * 对文本进行预分类
-     * 
-     * @param files
-     * @throws IOException
-     * @throws FileNotFoundException
+     *
      */
     private void readVocabWithSupervised(File[] files) throws IOException {
         for (int category = 0; category < files.length; category++) {
@@ -332,9 +307,7 @@ public class Learn {
 
     /**
      * 根据文件学习
-     * 
-     * @param file
-     * @throws IOException
+     *
      */
     public void learnFile(File file) throws IOException {
         readVocab(file);
@@ -350,12 +323,9 @@ public class Learn {
 
     /**
      * 根据预分类的文件学习
-     * 
-     * @param summaryFile
-     *            合并文件
-     * @param classifiedFiles
-     *            分类文件
-     * @throws IOException
+     *
+     * @param summaryFile     合并文件
+     * @param classifiedFiles 分类文件
      */
     public void learnFile(File summaryFile, File[] classifiedFiles) throws IOException {
         readVocabWithSupervised(classifiedFiles);

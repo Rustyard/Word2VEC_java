@@ -1,35 +1,66 @@
 package com.ansj.vec;
 
-import java.io.BufferedInputStream;
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeSet;
-
 import com.ansj.vec.domain.WordEntry;
+
+import java.io.*;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class Word2vec {
 
+    private static final int MAX_SIZE = 50;
     private HashMap<String, float[]> wordMap = new HashMap<String, float[]>();
-
     private int words;
     private int size;
     private int topNSize = 40;
 
+    public static float readFloat(InputStream is) throws IOException {
+        byte[] bytes = new byte[4];
+        is.read(bytes);
+        return getFloat(bytes);
+    }
+
+    /**
+     * 读取一个float
+     *
+     */
+    public static float getFloat(byte[] b) {
+        int accum = 0;
+        accum = accum | (b[0] & 0xff) << 0;
+        accum = accum | (b[1] & 0xff) << 8;
+        accum = accum | (b[2] & 0xff) << 16;
+        accum = accum | (b[3] & 0xff) << 24;
+        return Float.intBitsToFloat(accum);
+    }
+
+    /**
+     * 读取一个字符串
+     *
+     */
+    private static String readString(DataInputStream dis) throws IOException {
+        // TODO Auto-generated method stub
+        byte[] bytes = new byte[MAX_SIZE];
+        byte b = dis.readByte();
+        int i = -1;
+        StringBuilder sb = new StringBuilder();
+        while (b != 32 && b != 10) {
+            i++;
+            bytes[i] = b;
+            b = dis.readByte();
+            if (i == 49) {
+                sb.append(new String(bytes));
+                i = -1;
+                bytes = new byte[MAX_SIZE];
+            }
+        }
+        sb.append(new String(bytes, 0, i + 1));
+        return sb.toString();
+    }
+
     /**
      * 加载模型
-     * 
-     * @param path
-     *            模型的路径
-     * @throws IOException
+     *
+     * @param path 模型的路径
      */
     public void loadGoogleModel(String path) throws IOException {
         DataInputStream dis = null;
@@ -69,10 +100,8 @@ public class Word2vec {
 
     /**
      * 加载模型
-     * 
-     * @param path
-     *            模型的路径
-     * @throws IOException
+     *
+     * @param path 模型的路径
      */
     public void loadJavaModel(String path) throws IOException {
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(path)))) {
@@ -104,12 +133,9 @@ public class Word2vec {
         }
     }
 
-    private static final int MAX_SIZE = 50;
-
     /**
      * 近义词
-     * 
-     * @return
+     *
      */
     public TreeSet<WordEntry> analogy(String word0, String word1, String word2) {
         float[] wv0 = getWordVector(word0);
@@ -165,7 +191,7 @@ public class Word2vec {
         if (center == null) {
             return Collections.emptySet();
         }
-        int resultSize = wordMap.size() < topNSize ? wordMap.size() : topNSize;
+        int resultSize = Math.min(wordMap.size(), topNSize);
         TreeSet<WordEntry> result = new TreeSet<WordEntry>();
         double min = Float.MIN_VALUE;
         for (Map.Entry<String, float[]> entry : wordMap.entrySet()) {
@@ -205,7 +231,7 @@ public class Word2vec {
         if (center == null) {
             return Collections.emptySet();
         }
-        int resultSize = wordMap.size() < topNSize ? wordMap.size() : topNSize;
+        int resultSize = Math.min(wordMap.size(), topNSize);
         TreeSet<WordEntry> result = new TreeSet<WordEntry>();
         double min = Float.MIN_VALUE;
         for (Map.Entry<String, float[]> entry : wordMap.entrySet()) {
@@ -248,60 +274,10 @@ public class Word2vec {
 
     /**
      * 得到词向量
-     * 
-     * @param word
-     * @return
+     *
      */
     public float[] getWordVector(String word) {
         return wordMap.get(word);
-    }
-
-    public static float readFloat(InputStream is) throws IOException {
-        byte[] bytes = new byte[4];
-        is.read(bytes);
-        return getFloat(bytes);
-    }
-
-    /**
-     * 读取一个float
-     * 
-     * @param b
-     * @return
-     */
-    public static float getFloat(byte[] b) {
-        int accum = 0;
-        accum = accum | (b[0] & 0xff) << 0;
-        accum = accum | (b[1] & 0xff) << 8;
-        accum = accum | (b[2] & 0xff) << 16;
-        accum = accum | (b[3] & 0xff) << 24;
-        return Float.intBitsToFloat(accum);
-    }
-
-    /**
-     * 读取一个字符串
-     * 
-     * @param dis
-     * @return
-     * @throws IOException
-     */
-    private static String readString(DataInputStream dis) throws IOException {
-        // TODO Auto-generated method stub
-        byte[] bytes = new byte[MAX_SIZE];
-        byte b = dis.readByte();
-        int i = -1;
-        StringBuilder sb = new StringBuilder();
-        while (b != 32 && b != 10) {
-            i++;
-            bytes[i] = b;
-            b = dis.readByte();
-            if (i == 49) {
-                sb.append(new String(bytes));
-                i = -1;
-                bytes = new byte[MAX_SIZE];
-            }
-        }
-        sb.append(new String(bytes, 0, i + 1));
-        return sb.toString();
     }
 
     public int getTopNSize() {
